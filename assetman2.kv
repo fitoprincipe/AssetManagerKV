@@ -1,0 +1,27 @@
+<Folder>
+    text: "Folder"
+    height: 30
+    size_hint: 1, None
+
+BoxLayout:
+    id: principal
+    orientation: "vertical"
+    BoxLayout:
+        id: lay_assets
+        orientation: "horizontal"
+        BoxLayout:
+            id: columnas
+            ScrollView:
+                id: scroll
+                size_hint: 1, None
+                size: self.size
+                GridLayout:
+                    cols: 1
+                    size_hint: 1, None
+                    id: insidescroll
+                    Folder:
+                    Folder:
+                    Folder:
+                    Folder:
+        Button:
+            text: "HOLA"
