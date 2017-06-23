@@ -6,18 +6,21 @@ Created on Mon May 22 10:46:12 2017
 @author: labgeo1
 """
 from subprocess import call, check_output
+from collections import namedtuple
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.label import Label
 
 import ee
-ee.Initialize()
+
 
 class AssetEE():
     """
     Clase que accede a los assets del usuario mediante el modulo
     subprocess
-    
-    Iniciacion:
-    | **user**: usuario de GEE (ejemplo: rprincipe)
-    |
+
+    :arg: user: usuario de GEE (ejemplo: rprincipe)
+    :type: user: str
+
     Metodos (estaticos):
     | listFolders(path)
     | listFolders2(path)
@@ -25,10 +28,15 @@ class AssetEE():
     """
     def __init__(self, user):
         # inicia Earth Engine
-        ee.Initialize()
+        try:
+            ee.Initialize()
+        except Exception as e:
+            error = BoxLayout().add_widget(
+                Label(text=str(e)))
+            return error
         
-        self.user = "users/"+user
-        self.folders, self.nombres, self.tipos = self.listFolders2(self.user)
+        self.root = "users/"+user
+        # self.folders, self.nombres, self.tipos = self.listFolders2(self.root)
     
     @staticmethod
     def listFolders(path):
@@ -72,21 +80,36 @@ class AssetEE():
     
     @staticmethod
     def listFolders2(path):
+        """ Enlistar las carpetas de un path
+
+        :param: path: ruta que se quiere enlistar
+        :type: path: str
+
+        :returns: namedtuple con las siguientes propiedades:
+            :prop: completos: lista con la ruta completa de cada asset
+            :type: completos: list
+            :prop: nombres: lista con los nombres unicamente de cada asset
+            :type: nombres: list
+            :prop: tipos: lista con los tipo de elem ("Folder", ImageCollection" o "Image")
+            :type: tipos: list
+            :prop: error: BoxLayout indicando el error
+
+        :obs: Si no puede obtener los datos del path devuelve un BoxLayout
+            con un Label adentro indicando el error
+        """
         lista = path.split("/")        
-        #base = "/".join([lista[0],lista[1]])+"/" # ej: users/rprincipe/
-        #resto = path.lstrip(base) # ej: AP_tierraDelFuego/10NBRcut
+        # base = "/".join([lista[0],lista[1]])+"/" # ej: users/rprincipe/
+        # resto = path.lstrip(base) # ej: AP_tierraDelFuego/10NBRcut
         
-        #print "base: ",base,"resto ",resto        
+        # print "base: ",base,"resto ",resto
         try:
-            listjson = ee.data.getList({"id":path})        
+            listjson = ee.data.getList({"id":path})
+            error = None
         except Exception as e:
-            return None, None, None
-            '''
-            if str(e)[:14] == "No such folder":
-                return None, None, None
-            else:
-                return BoxLayout().add_widget(Label(text=str(e)))
-            '''
+            error = BoxLayout().add_widget(Label(text=str(e)))
+        else:
+            error = BoxLayout().add_widget(Label(text="Sin Errores"))
+
         completos = []
         nombres = []
         tipos = []
@@ -108,7 +131,13 @@ class AssetEE():
             #print i, tipo, completo, nombre
             #print tipo, nombre
         #print nombres
-        return completos, nombres, tipos
+
+        resultado = namedtuple("listFolders2", ("completos", "nombres",
+                                                "tipos", "error"
+                                               ))
+
+        return resultado(completos, nombres, tipos, error)
+        # return completos, nombres, tipos
             
     @staticmethod
     def delFolder(path):
