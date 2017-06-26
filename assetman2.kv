@@ -1,4 +1,9 @@
-<Folder>
+<Columnas>:
+    orientation: "vertical"
+    Menu:
+        id: menu
+
+<Folder>:
     height: 30
     size_hint: 1, None
     halign: "left"
@@ -6,7 +11,7 @@
     font_size: 20
     size_hint: 1, None
 
-<Menu>
+<Menu>:
     orientation: "horizontal"
     size_hint: 1, None
     height: 50
@@ -15,22 +20,27 @@
         size_hint: 0.2, 1
         on_press: root.borrar_click()
 
-<Scrolling>
+<Scrolling>:
     size_hint: 1, 1
 
-<Contenedor>
+<Contenedor>:
     orientation: "horizontal"
 
-<ContenedorAssets>
+<ContenedorAssets>:
     cols: 1
     size_hint: 1, None
 
-<Encabezado>
+<Encabezado>:
+    # vinculacion entre el id y el ObjectProperty
+    exit: exit_id
+    reload: reload_id
+    check: check_id
+
     orientation: "horizontal"
     size_hint: 1, None
     height: 30
     CheckBox:
-        id: check_enc
+        id: check_id
         size_hint: None, 1
         width: 20
     Label:
@@ -39,19 +49,20 @@
         font_size: 20
         size_hint: 0.8, 1
     Button:
-        id: reload
+        id: reload_id
         text: "reload"
         font_size: 12
         size_hint: None, 1
         width: 50
     Button:
-        id: exit_enc
+        id: exit_id
         text: "X"
         font_size: 20
         size_hint: None, 1
         width: 20
+        on_press: root.cerrar(self)
 
-<Filas>
+<Filas>:
     orientation: "horizontal"
     size_hint: 1, None
     height: 30
@@ -60,7 +71,7 @@
         size_hint: None, 1
         width: 20
 
-<Error>
+<Error>:
     orientation: "vertical"
     Button:
         text: "Salir"

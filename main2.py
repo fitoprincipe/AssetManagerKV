@@ -8,7 +8,7 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.scrollview import ScrollView
 from kivy.uix.gridlayout import GridLayout
 
-from kivy.properties import StringProperty
+from kivy.properties import StringProperty, ObjectProperty
 
 from kivy.logger import Logger
 import json
@@ -28,6 +28,9 @@ class Contenedor(BoxLayout):
 class Scrolling(ScrollView):
     pass
 
+
+class Columnas(BoxLayout):
+    pass
 
 class Menu(BoxLayout):
     """Aca van los widgets que realizan las acciones sobre una o varias carpetas
@@ -53,9 +56,13 @@ class Menu(BoxLayout):
             fila.parent.remove_widget(fila)
 
     def activos(self):
-        filas = self.parent.children[:-2]
         # Logger.info(filas)
         filas_activas = []
+
+        columnas = self.parent
+        scrolling = columnas.children[0]
+        contAsset = scrolling.children[0]
+        filas = contAsset.children
 
         for fila in filas:
             check = fila.check
@@ -125,12 +132,27 @@ class Encabezado(BoxLayout):
 
     # PROPIEDADES
     texto = StringProperty()
+    exit = ObjectProperty()
+    reload = ObjectProperty()
+    check = ObjectProperty()
 
     def __init__(self, **kwargs):
         super(Encabezado, self).__init__(**kwargs)
 
-        self.exit = self.ids["exit_enc"]
-        self.check = self.ids["check_enc"]
+        # self.exit = self.ids["exit_enc"]
+        # self.check = self.ids["check_enc"]
+
+        # self.exit.bind(on_press=self.cerrar)
+
+    def cerrar(self, widget):
+        t = widget.parent.texto
+        raiz = t.split(" ")
+        if int(raiz[0]) > 0:
+            columna = widget.parent.parent
+            ppal = widget.parent.parent.parent
+            ppal.remove_widget(columna)
+        else:
+            print "No se puede cerrar la primer pantalla (root folder)"
 
 
 class Filas(BoxLayout):
@@ -176,6 +198,9 @@ class AssetMan2App(App):
         self.title = "Asset Manager KV ver.0.1 Beta"
         self.user = "rprincipe"
 
+    def cerrar(self, instance):
+        self.stop()
+
     def build(self):
 
         # INICIO EARTH ENGINE
@@ -188,6 +213,8 @@ class AssetMan2App(App):
         # INICIO
         self.root = root = Principal()
         self.contenedor = contenedor = Contenedor()
+        columnas = Columnas()
+        manager = Scrolling()
 
         # FUNCIONES
         def on_checkbox_active(checkbox, value):
@@ -195,9 +222,10 @@ class AssetMan2App(App):
             # checkbox.parent => Encabezado()
             # Encabezado().parent => ContenedorAssets
             # ContenedorAssets.children => Filas (n), Encabezado, Menu
-            lista_wid = checkbox.parent.parent.children[:-2]
+            lista_wid = checkbox.parent.parent.children[0].children[0].children#[:-2]
+            # print lista_wid
             for wid in lista_wid:
-                # wid.check.active = value
+                wid.check.active = value
                 wid.children[1].active = value
 
         def addMenu(folder):
@@ -205,6 +233,7 @@ class AssetMan2App(App):
             Agregar un ContenedorAsset (Menu, Ecabezado y Filas) nuevo con
             lo que hay dentro de 'folder' (para Folder.click())
             """
+            col = Columnas()
             scroll = Scrolling()
             men = ContenedorAssets(folder)
             listfold = asset.listFolders2(folder)
@@ -221,12 +250,13 @@ class AssetMan2App(App):
             # self.infowin.text = info
 
             if nombres is not None:
-                men.add_widget(Menu())
+                # men.add_widget(Menu())
                 enc = Encabezado(texto=str(men.orden) + " " + men.path)
                 # enc.exit.on_press = partial(root.remove_widget,scroll)
                 enc.exit.on_press = partial(contenedor.remove_widget, scroll)
                 enc.check.bind(active=on_checkbox_active)
-                men.add_widget(enc)
+                # men.add_widget(enc)
+                col.add_widget(enc)
                 for n, nom in enumerate(nombres):
                     # print completo[n], tipos[n], nom
                     # lab = Folder(completo[n], tipos[n])
@@ -237,7 +267,9 @@ class AssetMan2App(App):
 
                 scroll.add_widget(men)
                 # root.add_widget(scroll)
-                contenedor.add_widget(scroll)
+                col.add_widget(scroll)
+                contenedor.add_widget(col)
+                # contenedor.add_widget(scroll)
 
         # PRIMER PANTALLA QUE CONTIENE EL CONTENIDO DE user/{user}/
         try:
@@ -249,7 +281,6 @@ class AssetMan2App(App):
             return err
 
         assCont = ContenedorAssets(asset.root)
-        manager = Scrolling()
 
         root_fold = asset.listFolders2(root_ass)
 
@@ -263,7 +294,8 @@ class AssetMan2App(App):
         if len(nom) > 0:
 
             # MENU
-            assCont.add_widget(Menu())
+            # assCont.add_widget(Menu())
+            # columnas.add_widget(Menu())
 
             # ENCABEZADO
             enc = Encabezado(texto=str(assCont.orden) + " " + assCont.path)
@@ -272,7 +304,8 @@ class AssetMan2App(App):
             enc.check.bind(active=on_checkbox_active)
             # enc.exit.bind(on_press=)
 
-            assCont.add_widget(enc)
+            #assCont.add_widget(enc)
+            columnas.add_widget(enc)
             for n, f in enumerate(nom):
                 # lab.on_press = addMenu()
                 path = folders[n]
@@ -289,7 +322,9 @@ class AssetMan2App(App):
         manager.add_widget(assCont)
 
         # root.add_widget(manager)
-        contenedor.add_widget(manager)
+        columnas.add_widget(manager)
+        contenedor.add_widget(columnas)
+        # contenedor.add_widget(manager)
         root.add_widget(contenedor)
 
         # root.add_widget(menu)
