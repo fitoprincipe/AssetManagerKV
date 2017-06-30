@@ -13,13 +13,12 @@ from kivy.uix.label import Label
 import ee
 
 
-class AssetEE():
-    """
-    Clase que accede a los assets del usuario mediante el modulo
+class AssetEE(object):
+    """ Clase que accede a los assets del usuario mediante el modulo
     subprocess
 
-    :arg: user: usuario de GEE (ejemplo: rprincipe)
-    :type: user: str
+    :param user: usuario de GEE (ejemplo: rprincipe)
+    :type user: str
 
     Metodos (estaticos):
     | listFolders(path)

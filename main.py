@@ -1,111 +1,84 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Wed Mar  8 11:19:42 2017
 
-@author: labgeo1
-"""
 from kivy.app import App
-
-# UX
-from kivy.uix.label import Label
-from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.floatlayout import FloatLayout
-from kivy.uix.gridlayout import GridLayout
 from kivy.uix.button import Button
-from kivy.graphics import Canvas
-from kivy.uix.scrollview import ScrollView
+from kivy.uix.label import Label
 from kivy.uix.checkbox import CheckBox
-from kivy.uix.popup import Popup
-from kivy.uix.textinput import TextInput
-from kivy.uix.dropdown import DropDown
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.scrollview import ScrollView
+from kivy.uix.gridlayout import GridLayout
 
-from kivy.logger import Logger
-from kivy.core.window import Window
-from kivy.clock import Clock
-from kivy.properties import NumericProperty
-from kivy.properties import StringProperty
+from kivy.properties import StringProperty, ObjectProperty
 
-import random
-import time
-from functools import partial
+from kivy.logger import Logger as LoggerKV
 import json
-
-# from labelscroll_kv import LabelScroll
-
 from assetEE import AssetEE
-
-# EE
+from functools import partial
 import ee
 
+logbox = None
+logtext = None
+
+class Logger(BoxLayout):
+    texto = StringProperty("LOGGER")
 
 class Principal(BoxLayout):
     def __init__(self, **kwargs):
-        """ Este es el contenedor general """
         super(Principal, self).__init__(**kwargs)
-        # self.orientation = "vertical"
+        global logbox
+        global logtext
+        log = self.ids["box_log"]
+        logbox = log.ids["log_action"]
+        logtext = log.ids["logger"]
 
 
 class Contenedor(BoxLayout):
-    def __init__(self, **kwargs):
-        """ Este es el contenedor general """
-        super(Contenedor, self).__init__(**kwargs)
-        # self.orientation = "horizontal"
+    pass
 
 
 class Scrolling(ScrollView):
-    def __init__(self, **kwargs):
-        super(Scrolling, self).__init__(**kwargs)
-
-        self.size_hint = (1, 1)
-        # self.size = (Window.width, Window.height)
+    pass
 
 
-class PopAuth(Popup):
-    def __init__(self, **kwargs):
-        super(PopAuth, self).__init__(**kwargs)
-        self.title = "Autorizaciones"
-        self.size_hint= (None, None)
-        self.size = (400, 400)
-        # self.auto_dismiss = False
-
-        self.adentro = BoxLayout(orientation="vertical")
-        self.email = BoxLayout(orientation="horizontal", size_hint=(1, None),
-                               height=30)
-        self.email.add_widget(
-            Label(text="email: ", size_hint=(None, 1), width=30))
-        self.emailText = TextInput()
-        self.email.add_widget(self.emailText)
-
-        self.adentro.add_widget(self.email)
-        self.content = self.adentro
-
+class Columnas(BoxLayout):
+    pass
 
 class Menu(BoxLayout):
+    """Aca van los widgets que realizan las acciones sobre una o varias carpetas
+
+    Se coloca por encima de la lista de carpetas y queda fijo
+
+    Widgets
+    #######
+
+    :widget Borrar: borra los assets seleccionados llamando a AssetEE.delFolder
+    :type Borrar: kivy.uix.Button
+
+
+    """
+    borrar = ObjectProperty()
+
     def __init__(self, **kwargs):
         super(Menu, self).__init__(**kwargs)
-        self.orientation = "horizontal"
-        self.size_hint = (1, None)
-        self.height = 50
 
-        self.borrar = Button(text="BORRAR", size_hint=(0.2, 1))
+    def borrar_click(self):
+        LoggerKV.info("borrar")
+        activos = self.activos()
 
-        # self.activos = self.parent.filas_activas
+        for fila in activos:
+            AssetEE.delFolder(fila.path)
+            fila.parent.remove_widget(fila)
 
-        def borrar_click(instance):
-            activos = self.activos()
-            for fila in activos:
-                AssetEE.delFolder(fila.path)
-                fila.parent.remove_widget(fila)
-
-                # print activos
-
-        self.borrar.bind(on_press=borrar_click)
-
-        self.add_widget(self.borrar)
+        logtext.text = "Borrado finalizado!"
 
     def activos(self):
-        filas = self.parent.children[:-2]
+        # Logger.info(filas)
         filas_activas = []
+
+        columnas = self.parent
+        scrolling = columnas.children[0]
+        contAsset = scrolling.children[0]
+        filas = contAsset.children
 
         for fila in filas:
             check = fila.check
@@ -116,49 +89,19 @@ class Menu(BoxLayout):
         return filas_activas
 
 
-class ContenedorAssets(GridLayout):
-    cantidad = 0
-
-    def __init__(self, path, **kwargs):
-        """ Este es el contenedor de assets """
-        super(ContenedorAssets, self).__init__(**kwargs)
-        # self.row_force_default = True
-        # self.row_default_height = 25
-        self.cols = 1
-        # self.orientation = "vertical"
-        self.size_hint = (1, None)
-        self.bind(minimum_height=self.setter('height'))
-        self.path = path
-        self.lista = path.split("/")
-        self.orden = len(self.lista) - 2
-        self.anterior = "/".join(self.lista[:-1])
-
-        # cuenta
-        ContenedorAssets.cantidad += 1
-        self.n = ContenedorAssets.cantidad
-
-
 class Folder(Button):
-    def __init__(self, path, tipo, **kwargs):
-        """ Estos son los labels que representan cada asset"""
-        super(Folder, self).__init__(**kwargs)
-        # self.size_hint = (1, None)
+    """ Estos son los labels que representan cada asset"""
 
-        # del widget        
-        self.height = 30
-        self.halign = "left"
-        self.valign = "middle"
-        self.color = (255, 255, 255, 1)
-        self.font_size = 20
-        self.size_hint = (1, None)
-        # self.orientation = "horizontal"
+    path = StringProperty()
+    tipo = StringProperty()
+
+    def __init__(self, **kwargs):
+        super(Folder, self).__init__(**kwargs)
 
         self.bind(size=self.setter('text_size'))
 
         # del folder
-        self.path = path
-        self.tipo = tipo
-        self.lista = path.split("/")
+        self.lista = self.path.split("/")
 
         self.orden = len(self.lista) - 2
         self.anterior = "/".join(self.lista[:-1])
@@ -172,174 +115,150 @@ class Folder(Button):
                         "Image": colors["red"],
                         "unk": colors["black"]}
 
-        self.color = self.colores.get(self.tipo, "unk")
+        self.background_color = self.colores.get(self.tipo, "unk")
 
+        self.color = self.colores.get(self.tipo, "unk")
         self.background_color = self.color
         self.color = (1, 1, 1, 1)
 
-    '''
-    def on_release(self):
-        #print "boton apretado"
-        scroll = Scrolling()
-        men = ContenedorAssets()
-        completo, nombres = AssetEE.listFolders2(self.path)
-        for n, nom in enumerate(nombres):
-            lab = Folder(text=nom)
-            men.add_widget(lab)                
-            
-        scroll.add_widget(men)
-        self.parent.add_widget(scroll)
-    '''
 
+class ContenedorAssets(GridLayout):
+    """ Contiene al Menu, al Encabezado y a las Filas
 
-class Filas(BoxLayout):
-    def __init__(self, path, tipo, **kwargs):
-        super(Filas, self).__init__(**kwargs)
-        self.orientation = "horizontal"
+    """
+    cantidad = 0
 
+    def __init__(self, path, **kwargs):
+        """ Este es el contenedor de assets """
+        super(ContenedorAssets, self).__init__(**kwargs)
+        self.bind(minimum_height=self.setter('height'))
         self.path = path
-        self.tipo = tipo
+        self.lista = path.split("/")
+        self.orden = len(self.lista) - 2
+        self.anterior = "/".join(self.lista[:-1])
 
-        self.text = path
-
-        self.size_hint = (1, None)
-        self.height = 30
-
-        self.check = CheckBox()
-        self.check.size_hint = (None, 1)
-        self.check.width = 20
-
-        self.folder = Folder(self.text, self.tipo)
-
-        self.add_widget(self.check)
-        self.add_widget(self.folder)
-
-
-class Encabezado_old(Button):
-    def __init__(self, **kwargs):
-        super(Encabezado_old, self).__init__(**kwargs)
-        self.size_hint = (0.2, None)
-        self.height = 30
+        # cuenta
+        ContenedorAssets.cantidad += 1
+        self.n = ContenedorAssets.cantidad
 
 
 class Encabezado(BoxLayout):
+    """el encabezado que está encima de la lista de Filas. Tiene una cruz para
+    cerrar el ContenedorAss()"""
+
+    # PROPIEDADES
+    texto = StringProperty()
+    exit = ObjectProperty()
+    reload = ObjectProperty()
+    check = ObjectProperty()
+
     def __init__(self, **kwargs):
         super(Encabezado, self).__init__(**kwargs)
-        self.orientation = "horizontal"
 
-        self.text = kwargs.get("text", "No hay texto")
+        # self.exit = self.ids["exit_enc"]
+        # self.check = self.ids["check_enc"]
 
-        self.size_hint = (1, None)  # (0.2,None)
-        self.height = 30
+        # self.exit.bind(on_press=self.cerrar)
 
-        # TEXTO
-        self.base = Label(text=self.text, font_size=20, size_hint=(0.8, 1))
+    def cerrar(self, widget):
+        t = widget.parent.texto
+        raiz = t.split(" ")
+        if int(raiz[0]) > 0:
+            columna = widget.parent.parent
+            ppal = widget.parent.parent.parent
+            ppal.remove_widget(columna)
+        else:
+            mje = "No se puede cerrar la primer pantalla (root folder)"
+            # log.ids["logger"].text = mje
+            logtext.text = mje
+            print mje, logtext.size
 
-        # EXIT
-        self.exit = Button(text="X", font_size=20, size_hint=(None, 1),
-                           width=20)
 
-        # CHECKBOX
-        self.check = CheckBox(size_hint=(None, 1), width=20)
-        # self.check.
+class Filas(BoxLayout):
+    """ Widget que contiene:
+    Un <Folder> y un CheckBox
 
-        self.add_widget(self.check)
-        self.add_widget(self.base)
-        self.add_widget(self.exit)
+    :prop: path: path completo del asset
+    :prop: tipo: tipo de asset (Image, ImageCollection, Folder)
+
+    """
+
+    path = StringProperty()
+    tipo = StringProperty()
+
+    def __init__(self, **kwargs):
+        super(Filas, self).__init__(**kwargs)
+
+        self.folder = Folder(tipo=self.tipo, path=self.path)
+        self.add_widget(self.folder)
+
+        self.check = self.ids["check_fila"]
+        # self.folder = self.ids["folder_fila"]
 
 
 class Error(BoxLayout):
     def __init__(self, **kwargs):
         super(Error, self).__init__(**kwargs)
 
-        app = App.get_running_app()
+        # app = App.get_running_app()
         # root = app.root
 
         self.mje = kwargs.get("mensaje", "no hay mensaje")
 
-        self.orientation = "vertical"
         self.mjeWid = Label(text=self.mje)
-        self.salir = Button(text="Salir", size_hint=(0.1, 0.1))
-        # self.salir.on_press = partial(app.stop())
-        self.mjeWid.text = "app.root: " + str(app.root) + " app: " + str(app)
+
+        #self.mjeWid.text = "app.root: " + str(app.root) + " app: " + str(app)
         self.add_widget(self.mjeWid)
-        self.add_widget(self.salir)
-
-
-class InfoWin(BoxLayout):
-    def __init__(self, **kwargs):
-        super(InfoWin, self).__init__(**kwargs)
-        self.orientation = "horizontal"
-        self.size_hint = (1, 0.3)
-
-        # self.logger = LabelScroll()
-        self.logger = Label()
-        self.add_widget(self.logger)
-
-
-class ScrollLabel(BoxLayout):
-    text = StringProperty('')
-
-    def __init__(self, **kwargs):
-        super(ScrollLabel, self).__init__(**kwargs)
-        self.size_hint = (1, 1)
-
-        self.label = Label(text=self.text, size_hint=(1, 1))
-        self.add_widget(self.label)
 
 
 class AssetManApp(App):
     def __init__(self, **kwargs):
         super(AssetManApp, self).__init__(**kwargs)
-        # App.__init__(self, **kwargs)
-        self.title = "Asset Manager ver.0.1 Beta"
+        self.title = "Asset Manager KV ver.0.1 Beta"
+        self.user = "rprincipe"
 
-    def on_start(self):
-        Logger.info("[Tamaño de la ventana] " + str(Window.size))
-
-    def mje(self):
-        Logger.info("resize ventana")
+    def cerrar(self, instance):
+        self.stop()
 
     def build(self):
 
-        self.root = root = Principal()
-
-        self.contenedor = contenedor = Contenedor()
-
-        # '''
-        # PARA EL COMIENZO LISTO LO QUE ESTA EN EL ROOT
-
+        # INICIO EARTH ENGINE
         try:
-            asset = AssetEE("rprincipe")
+            ee.Initialize()
         except Exception as e:
-            print str(e)
-            err = Error(mensaje=str(e))
-            # err.salir.on_press = partial(self.stop)
-            return err
-            # return Label(text=str(e))
-            # return BoxLayout().add_widget(Label(text=str(e)))#.add_widget(
-            # Salir().bind(on_press=self.stop))
+            # return BoxLayout().add_widget(Label(text=str(e)))
+            return Label(text=str(e))
 
-        # asset = AssetEE("rprincipe")
+        # INICIO
+        self.root = root = Principal()
+        self.contenedor = contenedor = Contenedor()
+        columnas = Columnas()
+        manager = Scrolling()
 
-        folders = asset.folders  # lista de folders (str)
-        nom = asset.nombres
-        tipos = asset.tipos
-
-        # '''
+        # FUNCIONES
         def on_checkbox_active(checkbox, value):
-            lista_wid = checkbox.parent.parent.children[:-1]
+            """Selecciona todos las Filas"""
+            # checkbox.parent => Encabezado()
+            # Encabezado().parent => ContenedorAssets
+            # ContenedorAssets.children => Filas (n), Encabezado, Menu
+            lista_wid = checkbox.parent.parent.children[0].children[0].children#[:-2]
+            # print lista_wid
             for wid in lista_wid:
                 wid.check.active = value
+                wid.children[1].active = value
 
         def addMenu(folder):
-            """            
-            Funcion para agregar la lista del contenido de un folder
-            (para Button.click())
             """
+            Agregar un ContenedorAsset (Menu, Ecabezado y Filas) nuevo con
+            lo que hay dentro de 'folder' (para Folder.click())
+            """
+            col = Columnas()
             scroll = Scrolling()
             men = ContenedorAssets(folder)
-            completo, nombres, tipos = asset.listFolders2(folder)
+            listfold = asset.listFolders2(folder)
+            completo = listfold.completos
+            nombres = listfold.nombres
+            tipos = listfold.tipos
 
             # LOGGER
             info_json = ee.data.getInfo(folder)
@@ -347,77 +266,89 @@ class AssetManApp(App):
                               separators=[",", ": "])
 
             # print info
-            self.infowin.text = info
+            # self.infowin.text = info
 
             if nombres is not None:
-                men.add_widget(Menu())
-                enc = Encabezado(text=str(men.orden) + " " + men.path)
+                # men.add_widget(Menu())
+                enc = Encabezado(texto=str(men.orden) + " " + men.path)
                 # enc.exit.on_press = partial(root.remove_widget,scroll)
                 enc.exit.on_press = partial(contenedor.remove_widget, scroll)
                 enc.check.bind(active=on_checkbox_active)
-                men.add_widget(enc)
+                # men.add_widget(enc)
+                col.add_widget(enc)
                 for n, nom in enumerate(nombres):
                     # print completo[n], tipos[n], nom
                     # lab = Folder(completo[n], tipos[n])
-                    lab = Filas(completo[n], tipos[n])
+                    lab = Filas(tipo=tipos[n], path=completo[n])
                     lab.folder.text = nom
                     lab.folder.on_press = partial(addMenu, completo[n])
                     men.add_widget(lab)
 
                 scroll.add_widget(men)
                 # root.add_widget(scroll)
-                contenedor.add_widget(scroll)
+                col.add_widget(scroll)
+                contenedor.add_widget(col)
+                # contenedor.add_widget(scroll)
 
-        # menu = contenedorInterno(size_hint=(0.2, None))
-        # menu = FloatLayout()
-        # manager = contenedorInterno(size_hint=(0.8, None), pos_hint={
-        # "top":1})
-        # manager = ContenedorAssets()
-        assCont = ContenedorAssets(asset.user)
-        manager = Scrolling()
-        # fold = ["unoaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","dos",
-        # "tres",
-        #        "cuatro","cinco","seis","site","ocjho","Mieve", "doez"]
+        # PRIMER PANTALLA QUE CONTIENE EL CONTENIDO DE user/{user}/
+        try:
+            asset = AssetEE(self.user)
+            root_ass = asset.root
+        except Exception as e:
+            print str(e)
+            err = Error(mensaje=str(e))
+            return err
 
-        # nom = [str(i) for i in range(100)]
-        if nom is not None:
-            # print assCont.n
-            assCont.add_widget(Menu())
-            enc = Encabezado(text=str(assCont.orden) + " " + assCont.path)
+        assCont = ContenedorAssets(asset.root)
+
+        root_fold = asset.listFolders2(root_ass)
+
+        if root_fold.error is not None:
+            return root_fold.error
+
+        folders = root_fold.completos  # lista de folders (str)
+        nom = root_fold.nombres
+        tipos = root_fold.tipos
+
+        if len(nom) > 0:
+
+            # MENU
+            # assCont.add_widget(Menu())
+            # columnas.add_widget(Menu())
+
+            # ENCABEZADO
+            enc = Encabezado(texto=str(assCont.orden) + " " + assCont.path)
+
+            # AGREGO LAS ACCIONES PARA LOS CHILDREN DE Encabezado
             enc.check.bind(active=on_checkbox_active)
-            pop = PopAuth()
-            enc.exit.bind(on_press=pop.open)
+            # enc.exit.bind(on_press=)
 
-            assCont.add_widget(enc)
+            #assCont.add_widget(enc)
+            columnas.add_widget(enc)
             for n, f in enumerate(nom):
                 # lab.on_press = addMenu()
                 path = folders[n]
                 tipo = tipos[n]
                 # lab = Folder(path, tipo)
-                lab = Filas(path, tipo)
+                lab = Filas(tipo=tipo, path=path)
                 lab.folder.on_press = partial(addMenu, path)
                 # lab.on_press = partial(Logger.info, tipo+" "+f+" "+folder)
 
-                # TEXTO            
+                # TEXTO
                 lab.folder.text = f
                 assCont.add_widget(lab)
-                # Logger.info(str(lab.text_size))
 
         manager.add_widget(assCont)
 
         # root.add_widget(manager)
-        contenedor.add_widget(manager)
+        columnas.add_widget(manager)
+        contenedor.add_widget(columnas)
+        # contenedor.add_widget(manager)
         root.add_widget(contenedor)
-
-        self.infowin = ScrollLabel()  # InfoWin()
-
-        root.add_widget(self.infowin)
 
         # root.add_widget(menu)
         return root
 
-
 if __name__ == "__main__":
-    unaApp = AssetManApp()
-    # unaApp.title = "Asset Manager
-    unaApp.run()
+    app = AssetManApp()
+    app.run()
