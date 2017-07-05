@@ -8,7 +8,7 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.scrollview import ScrollView
 from kivy.uix.gridlayout import GridLayout
 
-from kivy.properties import StringProperty, ObjectProperty
+from kivy.properties import StringProperty, ObjectProperty, ListProperty, NumericProperty
 
 from kivy.logger import Logger as LoggerKV
 import json
@@ -43,6 +43,7 @@ class Scrolling(ScrollView):
 class Columnas(BoxLayout):
     pass
 
+
 class Menu(BoxLayout):
     """Aca van los widgets que realizan las acciones sobre una o varias carpetas
 
@@ -70,6 +71,15 @@ class Menu(BoxLayout):
             fila.parent.remove_widget(fila)
 
         logtext.text = "Borrado finalizado!"
+
+    def compartir_click(self):
+        activos = self.activos()
+
+        for fila in activos:
+            # TODO: generar un metodo para que se pueda elegir el tipo de permiso
+            AssetEE.shareFolder(fila.path, ("agustinambouza@gmail.com",), "W")
+
+        logtext.text = "Asset compartido correctamente!"
 
     def activos(self):
         # Logger.info(filas)
@@ -127,6 +137,7 @@ class ContenedorAssets(GridLayout):
 
     """
     cantidad = 0
+    filas = ListProperty([])
 
     def __init__(self, path, **kwargs):
         """ Este es el contenedor de assets """
@@ -185,6 +196,7 @@ class Filas(BoxLayout):
 
     path = StringProperty()
     tipo = StringProperty()
+    texto = ObjectProperty()
 
     def __init__(self, **kwargs):
         super(Filas, self).__init__(**kwargs)

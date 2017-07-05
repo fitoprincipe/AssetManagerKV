@@ -1,27 +1,45 @@
+#:import ran random.randint
+
 <Columnas>:
     orientation: "vertical"
     Menu:
         id: menu
 
 <Folder>:
+    # Button
     height: 30
     size_hint: 1, None
     halign: "left"
     valign: "middle"
     font_size: 20
-    size_hint: 1, None
+    # text_size: self.width, None
+    # height: self.texture_size[1]
 
 <Menu>:
     borrar: boton_borrar
+    compartir: boton_compart
 
-    orientation: "horizontal"
+    orientation: "vertical"
     size_hint: 1, None
-    height: 50
+    height: 40
+    canvas:
+        Color:
+            rgba: ran(0.0, 1.0), ran(0.0, 1.0), ran(0.0, 1.0), 0.6
+        Rectangle:
+            pos: self.pos
+            size: self.size
     Button:
         id: boton_borrar
-        text: "BORRAR"
-        size_hint: 0.2, 1
+        text: "Borrar"
+        size_hint: None, 1
+        width: 100
         on_press: root.borrar_click()
+    Button:
+        id: boton_compart
+        text: "Compartir"
+        size_hint: None, 1
+        width: 100
+        on_press: root.compartir_click()
 
 <Scrolling>:
     size_hint: 1, 1
@@ -41,7 +59,7 @@
 
     orientation: "horizontal"
     size_hint: 1, None
-    height: 30
+    height: lab_enc.height
     CheckBox:
         id: check_id
         size_hint: None, 1
@@ -51,18 +69,22 @@
         text: root.texto
         font_size: 20
         size_hint: 0.8, 1
+        text_size: self.width, None
+        height: self.texture_size[1]
     Button:
         id: reload_id
         text: "reload"
         font_size: 12
-        size_hint: None, 1
+        size_hint: None, None
         width: 50
+        height: 25
     Button:
         id: exit_id
-        text: "X"
+        text: "x"
         font_size: 20
-        size_hint: None, 1
+        size_hint: None, None
         width: 20
+        height: 25
         on_press: root.cerrar(self)
 
 <Filas>:
@@ -91,11 +113,20 @@
     orientation: "horizontal"
     size_hint: 1, None
     height: 100
-    Label:
-        id: logger
-        # size_hint: 1, 1
-        # size: self.size
-        text: root.texto
-        halign: "left"
+    ScrollView:
+        size_hint: 0.5, 1
+        canvas.before:
+            Color:
+                rgba: 0.1,0,0,0.1
+            Rectangle:
+                size: self.size
+                pos: self.pos
+        Label:
+            id: logger
+            size_hint: 1, None
+            # texture_size: parent.width, None
+            text: root.texto
+            halign: "left"
     BoxLayout:
         id: log_action
+        size_hint: 0.5, None

@@ -15,7 +15,7 @@ import ee
 
 class AssetEE(object):
     """ Clase que accede a los assets del usuario mediante el modulo
-    subprocess
+    subprocess.
 
     :param user: usuario de GEE (ejemplo: rprincipe)
     :type user: str
@@ -24,6 +24,7 @@ class AssetEE(object):
     | listFolders(path)
     | listFolders2(path)
     | delFolder(path)
+    | shareFolder(path, correo, permiso)
     """
     def __init__(self, user):
         # inicia Earth Engine
@@ -149,3 +150,36 @@ class AssetEE(object):
             return True
         except Exception as e:
             print str(e)
+            return e
+
+    @staticmethod
+    def shareFolder(path, correos, permiso="R"):
+        """ Método para compartir un asset
+
+        :param path: ruta completa del asset
+        :type path: str
+
+        :param correos: correo al cual se quiere compartir el asset
+        :type correos: tuple
+
+        :param permiso: tipo de acceso que se dará (read: R, write: W)
+        :type permiso: str
+        """
+        # TODO: crear un arch de texto con los correos para generar un historial
+        if permiso not in ("R", "W"):
+            raise ValueError("'permiso' debe ser 'R' (read) o 'W' (write)")
+
+        if type(correos) is not tuple:
+            raise ValueError("'correos' debe ser un tuple")
+
+        permisos= {'R':'read', 'W':'write'}
+
+        check_cont = call(["earthengine", "ls", path])
+        if check_cont == 0:
+            contenido = check_output(["earthengine", "ls", path])
+            inside = contenido.split("\n")
+            for correo in correos:
+                for ass in inside:
+                    print "Dando acceso", permisos[permiso], "a", correo, "a", ass
+                    call(["earthengine", "acl", "ch", "-u", correo+":"+permiso, ass])
+            return "Se dio acceso a {0} a todo lo contenido en {1}".format(correos, path)
