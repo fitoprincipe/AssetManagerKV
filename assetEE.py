@@ -104,40 +104,37 @@ class AssetEE(object):
         # print "base: ",base,"resto ",resto
         try:
             listjson = ee.data.getList({"id":path})
-            error = None
         except Exception as e:
-            error = BoxLayout().add_widget(Label(text=str(e)))
+            sucess = False
+            # error = BoxLayout().add_widget(Label(text=str(e)))
         else:
-            error = BoxLayout().add_widget(Label(text="Sin Errores"))
+            sucess = True
+            # error = BoxLayout().add_widget(Label(text="Sin Errores"))
 
         completos = []
         nombres = []
         tipos = []
-        
-        for i, n in enumerate(listjson):
-            # print i, "json", n
-            tipo = n["type"].decode("utf_8")
-            tipos.append(tipo)
-            
-            completo = n["id"].decode("utf_8")
-            completos.append(completo)
-            
-            lista = completo.split("/")
-            
-            #nombre = completo.replace(base,"")
-            nombre = lista[-1]
-            nombres.append(nombre)
-            
-            #print i, tipo, completo, nombre
-            #print tipo, nombre
-        #print nombres
 
-        resultado = namedtuple("listFolders2", ("completos", "nombres",
-                                                "tipos", "error"
-                                               ))
+        if sucess:
+            for i, n in enumerate(listjson):
+                tipo = n["type"].decode("utf_8")
+                tipos.append(tipo)
 
-        return resultado(completos, nombres, tipos, error)
-        # return completos, nombres, tipos
+                completo = n["id"].decode("utf_8")
+                completos.append(completo)
+
+                lista = completo.split("/")
+
+                nombre = lista[-1]
+                nombres.append(nombre)
+
+
+            resultado = namedtuple("listFolders2", ("completos", "nombres",
+                                                    "tipos"))
+
+            return resultado(completos, nombres, tipos)
+        else:
+            return None
             
     @staticmethod
     def delFolder(path):

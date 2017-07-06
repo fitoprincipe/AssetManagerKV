@@ -19,6 +19,16 @@ import ee
 logbox = None
 logtext = None
 
+COLORS = {"red": (1, 0, 0, 0.8),
+          "green": (0, 1, 0, 0.8),
+          "blue": (0, 0, 1, 0.8),
+          "black": (0, 0, 0, 0.8)}
+
+COLTYPE = {"Folder": COLORS["blue"],
+           "ImageCollection": COLORS["green"],
+           "Image": COLORS["red"],
+           "unk": COLORS["black"]}
+
 class Logger(BoxLayout):
     texto = StringProperty("LOGGER")
 
@@ -99,39 +109,6 @@ class Menu(BoxLayout):
         return filas_activas
 
 
-class Folder(Button):
-    """ Estos son los labels que representan cada asset"""
-
-    path = StringProperty()
-    tipo = StringProperty()
-
-    def __init__(self, **kwargs):
-        super(Folder, self).__init__(**kwargs)
-
-        self.bind(size=self.setter('text_size'))
-
-        # del folder
-        self.lista = self.path.split("/")
-
-        self.orden = len(self.lista) - 2
-        self.anterior = "/".join(self.lista[:-1])
-
-        colors = {"red": (1, 0, 0, 1), "green": (0, 1, 0, 1),
-                  "blue": (0, 0, 1, 1),
-                  "black": (0, 0, 0, 1)}
-
-        self.colores = {"Folder": colors["blue"],
-                        "ImageCollection": colors["green"],
-                        "Image": colors["red"],
-                        "unk": colors["black"]}
-
-        self.background_color = self.colores.get(self.tipo, "unk")
-
-        self.color = self.colores.get(self.tipo, "unk")
-        self.background_color = self.color
-        self.color = (1, 1, 1, 1)
-
-
 class ContenedorAssets(GridLayout):
     """ Contiene al Menu, al Encabezado y a las Filas
 
@@ -196,30 +173,30 @@ class Filas(BoxLayout):
 
     path = StringProperty()
     tipo = StringProperty()
-    texto = ObjectProperty()
+    texto = StringProperty()
+    color_fondo = ListProperty()
+    boton = ObjectProperty()
 
     def __init__(self, **kwargs):
         super(Filas, self).__init__(**kwargs)
 
-        self.folder = Folder(tipo=self.tipo, path=self.path)
-        self.add_widget(self.folder)
-
         self.check = self.ids["check_fila"]
-        # self.folder = self.ids["folder_fila"]
 
+        self.lista = self.path.split("/")
+
+        self.orden = len(self.lista) - 2
+        self.anterior = "/".join(self.lista[:-1])
+
+        self.color_fondo = COLTYPE.get(self.tipo, "unk")
 
 class Error(BoxLayout):
     def __init__(self, **kwargs):
         super(Error, self).__init__(**kwargs)
 
-        # app = App.get_running_app()
-        # root = app.root
-
         self.mje = kwargs.get("mensaje", "no hay mensaje")
 
         self.mjeWid = Label(text=self.mje)
 
-        #self.mjeWid.text = "app.root: " + str(app.root) + " app: " + str(app)
         self.add_widget(self.mjeWid)
 
 
@@ -238,7 +215,6 @@ class AssetManApp(App):
         try:
             ee.Initialize()
         except Exception as e:
-            # return BoxLayout().add_widget(Label(text=str(e)))
             return Label(text=str(e))
 
         # INICIO
@@ -254,7 +230,6 @@ class AssetManApp(App):
             # Encabezado().parent => ContenedorAssets
             # ContenedorAssets.children => Filas (n), Encabezado, Menu
             lista_wid = checkbox.parent.parent.children[0].children[0].children#[:-2]
-            # print lista_wid
             for wid in lista_wid:
                 wid.check.active = value
                 wid.children[1].active = value
@@ -268,6 +243,10 @@ class AssetManApp(App):
             scroll = Scrolling()
             men = ContenedorAssets(folder)
             listfold = asset.listFolders2(folder)
+
+            if listfold is None:
+                return None
+
             completo = listfold.completos
             nombres = listfold.nombres
             tipos = listfold.tipos
@@ -277,30 +256,20 @@ class AssetManApp(App):
             info = json.dumps(info_json, indent=2, sort_keys=True,
                               separators=[",", ": "])
 
-            # print info
-            # self.infowin.text = info
 
             if nombres is not None:
-                # men.add_widget(Menu())
                 enc = Encabezado(texto=str(men.orden) + " " + men.path)
-                # enc.exit.on_press = partial(root.remove_widget,scroll)
                 enc.exit.on_press = partial(contenedor.remove_widget, scroll)
                 enc.check.bind(active=on_checkbox_active)
-                # men.add_widget(enc)
                 col.add_widget(enc)
                 for n, nom in enumerate(nombres):
-                    # print completo[n], tipos[n], nom
-                    # lab = Folder(completo[n], tipos[n])
-                    lab = Filas(tipo=tipos[n], path=completo[n])
-                    lab.folder.text = nom
-                    lab.folder.on_press = partial(addMenu, completo[n])
+                    lab = Filas(tipo=tipos[n], path=completo[n], texto=nom)
+                    lab.boton.on_press = partial(addMenu, completo[n])
                     men.add_widget(lab)
 
                 scroll.add_widget(men)
-                # root.add_widget(scroll)
                 col.add_widget(scroll)
                 contenedor.add_widget(col)
-                # contenedor.add_widget(scroll)
 
         # PRIMER PANTALLA QUE CONTIENE EL CONTENIDO DE user/{user}/
         try:
@@ -315,8 +284,8 @@ class AssetManApp(App):
 
         root_fold = asset.listFolders2(root_ass)
 
-        if root_fold.error is not None:
-            return root_fold.error
+        if root_fold is None:
+            return Label(text="No hay datos en la ruta principal")
 
         folders = root_fold.completos  # lista de folders (str)
         nom = root_fold.nombres
@@ -324,41 +293,26 @@ class AssetManApp(App):
 
         if len(nom) > 0:
 
-            # MENU
-            # assCont.add_widget(Menu())
-            # columnas.add_widget(Menu())
-
             # ENCABEZADO
             enc = Encabezado(texto=str(assCont.orden) + " " + assCont.path)
 
             # AGREGO LAS ACCIONES PARA LOS CHILDREN DE Encabezado
             enc.check.bind(active=on_checkbox_active)
-            # enc.exit.bind(on_press=)
-
-            #assCont.add_widget(enc)
             columnas.add_widget(enc)
+
             for n, f in enumerate(nom):
-                # lab.on_press = addMenu()
                 path = folders[n]
                 tipo = tipos[n]
-                # lab = Folder(path, tipo)
-                lab = Filas(tipo=tipo, path=path)
-                lab.folder.on_press = partial(addMenu, path)
-                # lab.on_press = partial(Logger.info, tipo+" "+f+" "+folder)
-
-                # TEXTO
-                lab.folder.text = f
+                lab = Filas(tipo=tipo, path=path, texto=f)
+                lab.boton.on_press = partial(addMenu, path)
                 assCont.add_widget(lab)
 
         manager.add_widget(assCont)
 
-        # root.add_widget(manager)
         columnas.add_widget(manager)
         contenedor.add_widget(columnas)
-        # contenedor.add_widget(manager)
         root.add_widget(contenedor)
 
-        # root.add_widget(menu)
         return root
 
 if __name__ == "__main__":
