@@ -285,7 +285,7 @@ class AssetManApp(App):
         root_fold = asset.listFolders2(root_ass)
 
         if root_fold is None:
-            return Label(text="No hay datos en la ruta principal")
+            return Label(text="There is no data in the main path")
 
         folders = root_fold.completos  # lista de folders (str)
         nom = root_fold.nombres
