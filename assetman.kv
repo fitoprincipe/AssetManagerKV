@@ -141,3 +141,14 @@
     BoxLayout:
         id: log_action
         size_hint: 0.5, None
+
+<LogIn>
+    BoxLayout:
+        orientation: 'vertical'
+        TextInput:
+            id: textlogin
+            hint_text: 'your Google Earth Engine user'
+        Button:
+            text: 'Log In'
+            on_press: app.launch(textlogin.text, root)
+            # root.manager.current = 'app_screen'

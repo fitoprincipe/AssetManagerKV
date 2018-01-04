@@ -12,7 +12,6 @@ from kivy.uix.label import Label
 
 import ee
 
-
 class AssetEE(object):
     """ Clase que accede a los assets del usuario mediante el modulo
     subprocess.
@@ -26,7 +25,7 @@ class AssetEE(object):
     | delFolder(path)
     | shareFolder(path, correo, permiso)
     """
-    def __init__(self, user):
+    def __init__(self):
         # inicia Earth Engine
         try:
             ee.Initialize()
@@ -35,7 +34,17 @@ class AssetEE(object):
                 Label(text=str(e)))
             return error
         
-        self.root = "users/"+user
+        # self.root = "users/"+user
+        roots = ee.data.getAssetRoots()
+        for root in roots:
+            rootlist = root["id"].split("/")
+            base = rootlist[0]
+            user = rootlist[1]
+            if base == "users":
+                self.root = root["id"]
+                self.user = user
+                break
+
         # self.folders, self.nombres, self.tipos = self.listFolders2(self.root)
     
     @staticmethod

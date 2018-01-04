@@ -7,6 +7,7 @@ from kivy.uix.checkbox import CheckBox
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.scrollview import ScrollView
 from kivy.uix.gridlayout import GridLayout
+from kivy.uix.screenmanager import ScreenManager, Screen
 
 from kivy.properties import StringProperty, ObjectProperty, ListProperty, NumericProperty
 
@@ -16,14 +17,17 @@ from assetEE import AssetEE
 from functools import partial
 import ee
 
+# global variables to have access from any widget
 logbox = None
 logtext = None
 
+# colors dict
 COLORS = {"red": (1, 0, 0, 0.8),
           "green": (0, 1, 0, 0.8),
           "blue": (0, 0, 1, 0.8),
           "black": (0, 0, 0, 0.8)}
 
+# coltype dict
 COLTYPE = {"Folder": COLORS["blue"],
            "ImageCollection": COLORS["green"],
            "Image": COLORS["red"],
@@ -37,9 +41,14 @@ class Principal(BoxLayout):
         super(Principal, self).__init__(**kwargs)
         global logbox
         global logtext
+
+        # redefine global variables
         log = self.ids["box_log"]
         logbox = log.ids["log_action"]
         logtext = log.ids["logger"]
+
+        # name for the Screen Manager
+        # self.name = "app_screen"
 
 
 class Contenedor(BoxLayout):
@@ -189,6 +198,7 @@ class Filas(BoxLayout):
 
         self.color_fondo = COLTYPE.get(self.tipo, "unk")
 
+
 class Error(BoxLayout):
     def __init__(self, **kwargs):
         super(Error, self).__init__(**kwargs)
@@ -273,7 +283,7 @@ class AssetManApp(App):
 
         # PRIMER PANTALLA QUE CONTIENE EL CONTENIDO DE user/{user}/
         try:
-            asset = AssetEE(self.user)
+            asset = AssetEE()
             root_ass = asset.root
         except Exception as e:
             print str(e)
