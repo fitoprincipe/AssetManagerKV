@@ -1,21 +1,16 @@
 # -*- coding: utf-8 -*-
 
 from kivy.app import App
-from kivy.uix.button import Button
 from kivy.uix.label import Label
-from kivy.uix.checkbox import CheckBox
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.scrollview import ScrollView
 from kivy.uix.gridlayout import GridLayout
-from kivy.uix.screenmanager import ScreenManager, Screen
 
 from kivy.properties import StringProperty, ObjectProperty, ListProperty, \
                             NumericProperty
 
 from kivy.logger import Logger as LoggerKV
-import json
-from assetEE import AssetEE, recrusive_delete_asset
-from functools import partial
+from assetEE import recrusive_delete_asset
 import ee
 ee.Initialize()
 
@@ -24,8 +19,6 @@ from config import COLTYPE, USER
 # global variables to have access from any widget
 logbox = None
 logtext = None
-
-assets = AssetEE()
 
 # Functions
 def on_checkbox_active(checkbox, value):
