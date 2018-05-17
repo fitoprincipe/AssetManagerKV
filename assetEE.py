@@ -3,7 +3,7 @@
 """
 Created on Mon May 22 10:46:12 2017
 
-@author: labgeo1
+@author: Rodrigo E. Principe
 """
 from subprocess import call, check_output
 from collections import namedtuple
@@ -11,13 +11,23 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
 
 import ee
+ee.Initialize()
+
+def recrusive_delete_asset(assetId):
+    content = ee.data.getList({'id':assetId})
+    if len(content) == 0:
+        ee.data.deleteAsset(assetId)
+    else:
+        for asset in content:
+            path = asset['id']
+            ty = asset['type']
+            if ty == 'Image':
+                ee.data.deleteAsset(path)
+            else:
+                recrusive_delete_asset(path)
 
 class AssetEE(object):
-    """ Clase que accede a los assets del usuario mediante el modulo
-    subprocess.
-
-    :param user: usuario de GEE (ejemplo: rprincipe)
-    :type user: str
+    """ Access user assets
 
     Metodos (estaticos):
     | listFolders(path)
@@ -26,15 +36,14 @@ class AssetEE(object):
     | shareFolder(path, correo, permiso)
     """
     def __init__(self):
-        # inicia Earth Engine
+        # Initialize Earth Engine
         try:
             ee.Initialize()
         except Exception as e:
             error = BoxLayout().add_widget(
                 Label(text=str(e)))
             return error
-        
-        # self.root = "users/"+user
+
         roots = ee.data.getAssetRoots()
         for root in roots:
             rootlist = root["id"].split("/")

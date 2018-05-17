@@ -1,13 +1,14 @@
 #:import ran random.random
 
-<Columnas>:
+<Column>:
+    # BoxLayout
     orientation: "vertical"
     Menu:
         id: menu
 
 <Menu>:
-    borrar: boton_borrar
-    compartir: boton_compart
+    delete: delete_button
+    share: share_button
 
     orientation: "vertical"
     size_hint: 1, None
@@ -19,30 +20,31 @@
             pos: self.pos
             size: self.size
     Button:
-        id: boton_borrar
-        text: "Borrar"
+        id: delete_button
+        text: "Delete"
         size_hint: None, 1
         width: 100
-        on_press: root.borrar_click()
+        on_press: root.click_delete()
     Button:
-        id: boton_compart
-        text: "Compartir"
+        id: share_button
+        text: "Share"
         size_hint: None, 1
         width: 100
-        on_press: root.compartir_click()
+        on_press: root.click_share()
 
 <Scrolling>:
     size_hint: 1, 1
 
-<Contenedor>:
+<Container>:
+    # BoxLayout
     orientation: "horizontal"
 
-<ContenedorAssets>:
+<AssetsContainer>:
     cols: 1
     size_hint: 1, None
 
-<Encabezado>:
-    # vinculacion entre el id y el ObjectProperty
+<Header>:
+    # sync between id and ObjectProperty
     exit: exit_id
     reload: reload_id
     check: check_id
@@ -51,14 +53,14 @@
     size_hint: 1, None
     # height: 30
     # height: lab_enc.height
-    height: lab_enc.height if lab_enc.height > 30 else 30
+    height: header_label.height if header_label.height > 30 else 30
     CheckBox:
         id: check_id
         size_hint: None, 1
         width: 20
     Label:
-        id: lab_enc
-        text: root.texto
+        id: header_label
+        text: root.text
         font_size: 14
         size_hint: 0.8, 1
         text_size: self.width, None
@@ -79,28 +81,29 @@
         width: 20
         height: 25
         valign: "center"
-        on_press: root.cerrar(self)
+        on_press: root.close(self)
 
-<Filas>:
+<Row>:
     orientation: "horizontal"
     size_hint: 1, None
     height: 30
-    boton: label_fila
-    size: label_fila.size
+    button: row_label
+    size: row_label.size
     CheckBox:
-        id: check_fila
+        id: check_row
         size_hint: None, 1
         width: 20
     Button:
-        id: label_fila
-        text: root.texto
-        background_color: root.color_fondo
+        id: row_label
+        text: root.text
+        background_color: root.background_color
         color: 1, 1, 1, 1
         halign: "left"
+        on_release: root.add_column()
 
         # WRAPPING
         size_hint: 1, None
-        text_size: root.width-check_fila.width, None
+        text_size: root.width-check_row.width, None
         height: self.texture_size[1] + 10
         # size: self.texture_size[0]+10, self.texture_size[1]+10
 
@@ -109,11 +112,11 @@
 <Error>:
     orientation: "vertical"
     Button:
-        text: "Salir"
+        text: "Exit"
         size_hint: 0.1, 0.1
         halign: "center"
 
-<Principal>:
+<GlobalContainer>:
     orientation: "vertical"
     Logger:
         id: box_log
@@ -127,7 +130,7 @@
         size_hint: 0.5, 1
         canvas.before:
             Color:
-                rgba: 0.1,0,0,0.1
+                rgba: 0.1, 0, 0, 0.1
             Rectangle:
                 size: self.size
                 pos: self.pos
@@ -136,19 +139,8 @@
             Label:
                 id: logger
                 size_hint: 1, None
-                text: root.texto
+                text: root.text
                 halign: "left"
     BoxLayout:
         id: log_action
         size_hint: 0.5, None
-
-<LogIn>
-    BoxLayout:
-        orientation: 'vertical'
-        TextInput:
-            id: textlogin
-            hint_text: 'your Google Earth Engine user'
-        Button:
-            text: 'Log In'
-            on_press: app.launch(textlogin.text, root)
-            # root.manager.current = 'app_screen'
