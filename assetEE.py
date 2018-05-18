@@ -9,7 +9,11 @@ import ee
 ee.Initialize()
 
 def recrusive_delete_asset(assetId):
-    content = ee.data.getList({'id':assetId})
+    try:
+        content = ee.data.getList({'id':assetId})
+    except:
+        return
+
     if len(content) == 0:
         ee.data.deleteAsset(assetId)
     else:

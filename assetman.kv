@@ -121,26 +121,47 @@
     Logger:
         id: box_log
 
+<LoggerLabel>:
+    cols: 1
+    size_hint: 1, None
+
 <Logger>:
     # BoxLayout
     orientation: "horizontal"
     size_hint: 1, None
     height: 100
     ScrollView:
-        size_hint: 0.5, 1
-        canvas.before:
-            Color:
-                rgba: 0.1, 0, 0, 0.1
-            Rectangle:
-                size: self.size
-                pos: self.pos
-        ScrollView:
-            size_hint: 1, 1
-            Label:
-                id: logger
-                size_hint: 1, None
-                text: root.text
-                halign: "left"
+        size_hint: 1, 1
+        Label:
+            id: logger
+            text: root.text
+            halign: "left"
+            # from https://blog.kivy.org/2014/07/wrapping-text-in-kivys-label/
+            size_hint: 1, None
+            text_size: self.width, None
+            height: self.texture_size[1]
     BoxLayout:
         id: log_action
-        size_hint: 0.5, None
+        size_hint: 1, None
+
+<YesNo>:
+    # BoxLayout
+    orientation: "vertical"
+    size_hint: 1, None
+    Label:
+        text: root.message
+    BoxLayout:
+        orientation: "horizontal"
+        Button:
+            id: yes_button
+            text: 'YES'
+            on_release: root.press_yes()
+        Button:
+            id: no_button
+            text: 'NO'
+            on_release: root.press_no()
+
+<InputBox>:
+    # BoxLayout
+    orientation: "vertical"
+    size_hint: 1, None
