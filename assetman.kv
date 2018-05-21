@@ -165,3 +165,26 @@
     # BoxLayout
     orientation: "vertical"
     size_hint: 1, None
+
+<TestInputBox>:
+    # BoxLayout
+    orientation: "vertical"
+    size_hint: 1, None
+    message: "customize with 'message' parameter"
+    default_text: ""
+    Label:
+        id: label_input_box
+        text: root.message
+    TextInput:
+        id: text_input
+        text: root.default_text
+    BoxLayout:
+        orientation: 'horizontal'
+        Button:
+            id: accept_button
+            text: 'accept'
+            on_release: root.accept
+        Button:
+            id: cancel_button
+            text: 'cancel'
+            on_release: root.on_cancel

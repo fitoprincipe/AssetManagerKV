@@ -8,6 +8,7 @@ from kivy.uix.gridlayout import GridLayout
 from kivy.clock import Clock
 from kivy.uix.textinput import TextInput
 from kivy.uix.button import Button
+from kivy.uix.checkbox import CheckBox
 
 from kivy.properties import StringProperty, ObjectProperty, ListProperty, \
                             NumericProperty
@@ -80,6 +81,44 @@ class InputBox(BoxLayout):
         self.add_widget(self.text_widget)
         self.add_widget(self.accept_button)
         self.accept_button.bind(on_release=self.on_accept)
+
+class ShareInputBox(BoxLayout):
+    text = StringProperty('')
+    message = StringProperty('')
+    button_text = StringProperty('accept')
+    def __init__(self, on_accept, **kwargs):
+        super(ShareInputBox, self).__init__(**kwargs)
+
+        # Input
+        self.text_widget = TextInput(text=self.text)
+        # Message
+        self.message_widget = Label(text=self.message)
+        # Accept Button
+        self.accept_button = Button(text=self.button_text)
+        # Share
+
+        # Add Widgets
+        self.add_widget(self.message_widget)
+        self.add_widget(self.text_widget)
+        self.add_widget(self.accept_button)
+
+        # On Accept callback
+        self.on_accept = on_accept
+        self.accept_button.bind(on_release=self.on_accept)
+
+class TestInputBox(BoxLayout):
+    message = StringProperty()
+    default_text = StringProperty()
+    def __init__(self, **kwargs):
+
+        def accept(*args):
+            print('accept')
+        # self.on_accept = accept() # kwargs.get('on_accept', accept)
+        # self.on_cancel = kwargs.get('on_cancel', lambda x: x)
+        super(TestInputBox, self).__init__(**kwargs)
+
+    def accept(self, *args):
+        print('accept', args)
 
 class GlobalContainer(BoxLayout):
     def __init__(self, **kwargs):
@@ -175,7 +214,7 @@ class Menu(BoxLayout):
                 '\n'.join([row.path for row in active_rows]))
             logtext.text = selected
 
-        def remove():
+        def yes():
             ''' function to call if press yes '''
             logtext.text = ''
             for n, row in enumerate(active_rows):
@@ -192,7 +231,7 @@ class Menu(BoxLayout):
 
         # Create YesNo Widget
         yn = YesNo(message='Are you sure you want to delete all selected assets?',
-                   on_yes=remove, on_no=no)
+                   on_yes=yes, on_no=no)
         logbox.add_widget(yn)
 
     def click_share(self):
@@ -220,12 +259,20 @@ class Menu(BoxLayout):
             # Remove YesNo Widget
             logbox.remove_widget(logbox.children[0])
             # Create widget to specify share email address
+            '''
             input_box = InputBox(text='some@email.com',
                                  message='Email address to share:',
                                  on_accept=accept)
             # address_label = Label(text='Email address to share:')
             # input = TextInput(text='some@email.com')
             logbox.add_widget(input_box)
+            '''
+            input = TestInputBox(
+                message='Are you sure you want to share the selected assets?',
+                default_text='someone@mail.com',
+                on_accept=accept
+            )
+            logbox.add_widget(input)
 
         def no():
             # Remove YesNo Widget
