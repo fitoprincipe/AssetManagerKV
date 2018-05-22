@@ -24,3 +24,9 @@ def recrusive_delete_asset(assetId):
                 ee.data.deleteAsset(path)
             else:
                 recrusive_delete_asset(path)
+
+def getAssetAcl(assetId):
+    return ee.data.getAssetAcl(assetId)
+
+def setAssetAcl(assetId, aclUpdate):
+    return ee.data.setAssetAcl(assetId, aclUpdate)
