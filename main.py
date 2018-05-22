@@ -15,11 +15,14 @@ from kivy.properties import StringProperty, ObjectProperty, ListProperty, \
 
 from functools import partial
 from kivy.logger import Logger as LoggerKV
-from assetEE import recrusive_delete_asset
+from assetEE import recrusive_delete_asset, getAssetAcl, setAssetAcl
 import ee
-ee.Initialize()
+import json
 
-from config import COLTYPE, USER
+try:
+    from config import COLTYPE, USER
+except Exception as e:
+    print(str(e))
 
 # global variables to have access from any widget
 logbox = None
@@ -42,83 +45,45 @@ def add_column():
 class Logger(BoxLayout):
     text = StringProperty()
 
-
 class YesNo(BoxLayout):
     message = StringProperty('')
-    pressed = NumericProperty(None)
-    def __init__(self, on_yes, on_no, **kwargs):
+    # pressed = NumericProperty(None)
+    def __init__(self, **kwargs):
         super(YesNo, self).__init__(**kwargs)
-        self.on_yes = on_yes
-        self.on_no = on_no
-        self.event = Clock.schedule_interval(self.check_pressed, 0.5)
+        self.on_yes = kwargs.get('on_yes', self.on_yes)
+        self.on_no = kwargs.get('on_no', self.on_no)
 
-    def check_pressed(self, dt):
-        is_pressed = self.pressed
-        if is_pressed == 1:
-            self.on_yes()
-            self.event.cancel()
-        elif is_pressed == 0:
-            self.on_no()
-            self.event.cancel()
+    def on_yes(self, **kwargs):
+        pass
 
-    def press_yes(self):
-        self.pressed = 1
+    def on_no(self, **kwargs):
+        pass
 
-    def press_no(self):
-        self.pressed = 0
+    def remove(self):
+        self.parent.remove_widget(self)
 
 class InputBox(BoxLayout):
-    text = StringProperty('')
-    message = StringProperty('')
-    button_text = StringProperty('accept')
-    def __init__(self, on_accept, **kwargs):
-        super(InputBox, self).__init__(**kwargs)
-        self.on_accept = on_accept
-        self.text_widget = TextInput(text=self.text)
-        self.message_widget = Label(text=self.message)
-        self.accept_button = Button(text=self.button_text)
-        self.add_widget(self.message_widget)
-        self.add_widget(self.text_widget)
-        self.add_widget(self.accept_button)
-        self.accept_button.bind(on_release=self.on_accept)
-
-class ShareInputBox(BoxLayout):
-    text = StringProperty('')
-    message = StringProperty('')
-    button_text = StringProperty('accept')
-    def __init__(self, on_accept, **kwargs):
-        super(ShareInputBox, self).__init__(**kwargs)
-
-        # Input
-        self.text_widget = TextInput(text=self.text)
-        # Message
-        self.message_widget = Label(text=self.message)
-        # Accept Button
-        self.accept_button = Button(text=self.button_text)
-        # Share
-
-        # Add Widgets
-        self.add_widget(self.message_widget)
-        self.add_widget(self.text_widget)
-        self.add_widget(self.accept_button)
-
-        # On Accept callback
-        self.on_accept = on_accept
-        self.accept_button.bind(on_release=self.on_accept)
-
-class TestInputBox(BoxLayout):
+    ''' General Input Box '''
     message = StringProperty()
     default_text = StringProperty()
     def __init__(self, **kwargs):
+        self.on_accept = kwargs.get('on_accept', self.on_accept)
+        self.on_cancel = kwargs.get('on_cancel', self.on_cancel)
+        super(InputBox, self).__init__(**kwargs)
 
-        def accept(*args):
-            print('accept')
-        # self.on_accept = accept() # kwargs.get('on_accept', accept)
-        # self.on_cancel = kwargs.get('on_cancel', lambda x: x)
-        super(TestInputBox, self).__init__(**kwargs)
+    def on_accept(self, **kwargs):
+        pass
 
-    def accept(self, *args):
-        print('accept', args)
+    def on_cancel(self, **kwargs):
+        pass
+
+    def remove(self):
+        self.parent.remove_widget(self)
+
+class ShareInput(InputBox):
+    def __init__(self, **kwargs):
+        super(ShareInput, self).__init__(**kwargs)
+
 
 class GlobalContainer(BoxLayout):
     def __init__(self, **kwargs):
@@ -161,7 +126,10 @@ class Column(BoxLayout):
         self.add_widget(header)
 
         # Get content of the path
-        path_data = ee.data.getList({'id':self.path})
+        try:
+            path_data = ee.data.getList({'id':self.path})
+        except Exception as e:
+            path_data = str(e)
 
         # Scroll
         scrolling = Scrolling()
@@ -210,11 +178,11 @@ class Menu(BoxLayout):
             return
         else:
             # log selected
-            selected = 'Selected rows:\n{}'.format(
+            selected = 'Selected assets:\n{}'.format(
                 '\n'.join([row.path for row in active_rows]))
             logtext.text = selected
 
-        def yes():
+        def yes(**kwargs):
             ''' function to call if press yes '''
             logtext.text = ''
             for n, row in enumerate(active_rows):
@@ -222,11 +190,15 @@ class Menu(BoxLayout):
                                row.path, n+1, totaln)
                 recrusive_delete_asset(row.path)
                 row.parent.remove_widget(row)
-            logbox.remove_widget(yn)
+            # logbox.remove_widget(yn)
+            # Remove Widget
+            kwargs['root'].remove()
 
-        def no():
+        def no(**kwargs):
             ''' function to call if press no '''
-            logbox.remove_widget(yn)
+            # logbox.remove_widget(yn)
+            # Remove Widget
+            kwargs['root'].remove()
             logtext.text = 'No Asset Deleted'
 
         # Create YesNo Widget
@@ -243,47 +215,98 @@ class Menu(BoxLayout):
             return
         else:
             # log selected
-            selected = 'Selected rows:\n{}'.format(
+            selected = 'Selected assets:\n{}'.format(
                 '\n'.join([row.path for row in active_rows]))
             logtext.text = selected
 
-        def yes():
-            def accept(button):
-                logtext.text = ''
-                for n, row in enumerate(active_rows):
-                    logtext.text = logtext.text +'\nSharing {}'.format(row.path)
-                # TODO: generar un metodo para que se pueda elegir el tipo de permiso
-                #AssetEE.shareFolder(active.path, ("@",), "W")
-                logbox.remove_widget(logbox.children[0])
 
-            # Remove YesNo Widget
-            logbox.remove_widget(logbox.children[0])
-            # Create widget to specify share email address
-            '''
-            input_box = InputBox(text='some@email.com',
-                                 message='Email address to share:',
-                                 on_accept=accept)
-            # address_label = Label(text='Email address to share:')
-            # input = TextInput(text='some@email.com')
-            logbox.add_widget(input_box)
-            '''
-            input = TestInputBox(
-                message='Are you sure you want to share the selected assets?',
-                default_text='someone@mail.com',
-                on_accept=accept
-            )
-            logbox.add_widget(input)
+        def accept(**kwargs):
+            root = kwargs['root']
+            # Get checkboxes states
+            read = root.ids['read']
+            state_read = read.active
+            write = root.ids['write']
+            state_write = write.active
+            remove = root.ids['remove']
+            state_remove = remove.active
+            # get email
+            email = root.ids['text_input'].text
 
-        def no():
-            # Remove YesNo Widget
-            logbox.remove_widget(logbox.children[0])
+            # yesno = YesNo(message='Are you sure you want to share the selected assets with {}?'.format(email))
 
-        # Create YesNo Widget
-        yn = YesNo(message='Are you sure you want to share all selected assets?',
-                   on_yes=yes, on_no=no)
-        logbox.add_widget(yn)
+            # clear logtext
+            log = ''
+            logtext.text = log
 
-        # logtext.text = "Asset shared to .."
+            for n, row in enumerate(active_rows):
+                acl = getAssetAcl(row.path)
+                writers = acl['writers']
+                readers = acl['readers']
+                # read and write
+                if state_read and state_write and not state_remove:
+                    readers.append(email)
+                    writers.append(email)
+                    log = log + '\n{} shared for read and write to {}'.format(row.path, email)
+                # read
+                elif state_read and not state_write and not state_remove:
+                    readers.append(email)
+                    log = log + '\n{} shared for read to {}'.format(row.path, email)
+                # write
+                elif state_write and not state_read and not state_remove:
+                    writers.append(email)
+                    log = log + '\n{} shared for write to {}'.format(row.path, email)
+                # remove from writers
+                elif state_write and not state_read and state_remove:
+                    if email in writers:
+                        writers.remove(email)
+                        log = log + '\n{} removed from writers'.format(row.path)
+                    else:
+                        log = log + '\n{} not in writers'.format(email)
+                # remove from readers
+                elif state_read and not state_write and state_remove:
+                    if email in readers:
+                        readers.remove(email)
+                        log = log + '\n{} removed from readers'.format(row.path)
+                    else:
+                        log = log + '\n{} not in readers'.format(email)
+                # remove from readers and writers
+                elif state_write and state_read and state_remove:
+                    if email in writers:
+                        writers.remove(email)
+                        log = log + '\n{} removed'.format(row.path)
+                    else:
+                        log = log + '\n{} not in readers or writers'.format(row.path)
+                    if email in readers:
+                        readers.remove(email)
+                        log = log + '\n{} removed from readers'.format(row.path)
+                    else:
+                        log = log + '\n{} not in assetAcl'.format(email)
+
+                new = {'readers': readers,
+                       'writers': writers}
+                try:
+                    setAssetAcl(row.path, json.dumps(new))
+                    logtext.text = log
+                except:
+                    logtext.text = logtext.text +'\nFail sharing {}'.format(row.path)
+
+            # Remove
+            root.remove()
+
+        def cancel(**kwargs):
+            # Remove
+            kwargs['root'].remove()
+            logtext.text = 'Task Cancelled'
+
+        # Create widget to specify share email address
+        # input = InputBox(
+        input = ShareInput(
+            message='Select email to share assets',
+            default_text='someone@mail.com',
+            on_accept=accept,
+            on_cancel=cancel
+        )
+        logbox.add_widget(input)
 
     def active(self):
         """ Get active rows
@@ -400,13 +423,6 @@ class Row(BoxLayout):
             container = column.parent # Container
             container.add_widget(newcolumn)
 
-class Error(BoxLayout):
-    def __init__(self, **kwargs):
-        super(Error, self).__init__(**kwargs)
-        self.msg = kwargs.get("message", "no message")
-        self.msg_widget = Label(text=self.msg)
-        self.add_widget(self.msg_widget)
-
 class AssetManApp(App):
     def __init__(self, **kwargs):
         super(AssetManApp, self).__init__(**kwargs)
@@ -416,19 +432,25 @@ class AssetManApp(App):
         self.stop()
 
     def build(self):
-        self.root = root = GlobalContainer()
-        self.container = container = Container()
+        try:
+            ee.Initialize()
 
-        # Root column
-        root_column = Column()
+            self.root = root = GlobalContainer()
+            self.container = container = Container()
 
-        # Add root column to container
-        container.add_widget(root_column)
+            # Root column
+            root_column = Column()
 
-        # Add container to global container
-        root.add_widget(container)
+            # Add root column to container
+            container.add_widget(root_column)
 
-        return root
+            # Add container to global container
+            root.add_widget(container)
+
+            return root
+        except Exception as e:
+            label = Label(text=str(e))
+            return label
 
 if __name__ == "__main__":
     app = AssetManApp()
